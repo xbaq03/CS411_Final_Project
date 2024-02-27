@@ -1,0 +1,42 @@
+1) Project Description:
+Our project enables the user to select a genre of movies they wish to watch, then it calls the IMDB API to list the top movies in that Genre, lists the IMDB ratings, synopsis, reviews. Then, it calls a second API (unofficial netflix API) to check whether each Movie is on netflix, as well as offer more netflix movies that are similar to that specific movie if it exists on netflix.
+
+2) Product Requirements:
+Goal: Create an easy-to-use website that allows users to search for movies and generate all the relevant information. 
+Non-Goal: Succinctly display all the relevant information in a compact manner, including different aspects from various APIs.
+
+Non-functional requirement 1: Updated information
+Functional Requirements:
+Periodically updated reviews from IMDB
+Updated selection of similar movies
+Non-functional requirement 2: Easy to use and digest
+Functional Requirements
+Limited number of buttons on user interface
+Use dropdown menus to reduce overcrowding of text
+
+3) Product Management:
+Theme:
+Enhancing movie discovery and selection experience.
+ 
+Epic:
+Seamless Genre-Based Movie Browsing
+ 
+User Story 1:
+As a movie enthusiast, I want to easily select a genre and see top movies in that category so that I can quickly choose what to watch, and I often don’t know where to stream the movies.
+ 
+Task: Implement genre selection and movie listing feature
+Ticket 1: Develop genre selection dropdown
+Implement a dropdown menu for genre selection populated with options from the IMDB API.
+
+Ticket 2: Integrate IMDB API for movie listings
+Fetch and display the top movies in the selected genre from the IMDB API.
+
+User Story 2:
+As a Netflix subscriber, I want to know if the movies listed are available on Netflix and get recommendations for similar movies so that I can utilize my subscription effectively.
+ 
+Task: Integrate Netflix availability check and recommendations
+Ticket 1: Implement Netflix API check
+Develop functionality to verify the availability of listed movies on Netflix using the unofficial Netflix API.
+
+Ticket 2: Fetch and display similar Netflix movies
+If a movie is available on Netflix, show similar movie recommendations using the same API.
