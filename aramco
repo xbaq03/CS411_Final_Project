@@ -184,7 +184,22 @@ int main(int argc, char *argv[])
       }
    }
 
-    //Sum weights for local rank:
+    
+   
+   // 6. Define a parallel mesh by a partitioning of the serial mesh. Refine
+   //    this mesh further in parallel to increase the resolution. Once the
+   //    parallel mesh is defined, the serial mesh can be deleted.
+   ParMesh *pmesh = new ParMesh(MPI_COMM_WORLD, *mesh, NULL, 3, vertex_weights);
+   //delete mesh;
+   /*{
+      int par_ref_levels = 2; 
+      for (int l = 0; l < par_ref_levels; l++)
+      {
+         pmesh->UniformRefinement();
+      }
+   }
+   */
+   //Sum weights for local rank:
    double local_weights = weight_gf.Sum();
  
 
@@ -210,21 +225,6 @@ int main(int argc, char *argv[])
       //printing total global weights across all ranks:
       cout << "Total Weight On Entire Mesh: " << global_weights << "\n";
    }
-   
-   // 6. Define a parallel mesh by a partitioning of the serial mesh. Refine
-   //    this mesh further in parallel to increase the resolution. Once the
-   //    parallel mesh is defined, the serial mesh can be deleted.
-   ParMesh *pmesh = new ParMesh(MPI_COMM_WORLD, *mesh, NULL, 3, vertex_weights);
-   //delete mesh;
-   /*{
-      int par_ref_levels = 2; 
-      for (int l = 0; l < par_ref_levels; l++)
-      {
-         pmesh->UniformRefinement();
-      }
-   }
-   */
-   
    //0702 Adding and populating "myid" field
    ParFiniteElementSpace myid_fes(pmesh, new L2_FECollection(0, pmesh->Dimension()));
    GridFunction myid_gf(&myid_fes);
