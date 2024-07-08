@@ -118,6 +118,27 @@ int main(int argc, char *argv[])
    int dim = mesh->Dimension();
    int num_vertices = mesh->GetNV();
    
+  
+   /*// 5. Refine the serial mesh on all processors to increase the resolution. In
+   //    this example we do 'ref_levels' of uniform refinement. We choose
+   //    'ref_levels' to be the largest number that gives a final mesh with no
+   //    more than 10,000 elements, unless the user specifies it as input.
+   {
+      if (ref_levels == -1)
+      {
+         ref_levels = (int)floor(log(10000./mesh->GetNE())/log(2.)/dim);
+      }
+
+      for (int l = 0; l < ref_levels; l++)
+      {
+         mesh->UniformRefinement();
+      }
+      
+   }
+   */
+   
+   //0702 Adding weights field:
+
    //0708 printing number of vertices and number of elements for rank 0 only:
    if(myid == 0)
    {
@@ -129,7 +150,7 @@ int main(int argc, char *argv[])
    
    for(int i = 0; i < mesh->GetNV(); i++){
       if(i%2 == 0){
-         vertex_weights[i] = 10;
+         vertex_weights[i] = 100;
       }
 
       else{
@@ -143,78 +164,29 @@ int main(int argc, char *argv[])
    }
 
    }
-   // 5. Refine the serial mesh on all processors to increase the resolution. In
-   //    this example we do 'ref_levels' of uniform refinement. We choose
-   //    'ref_levels' to be the largest number that gives a final mesh with no
-   //    more than 10,000 elements, unless the user specifies it as input.
-   /*{
-      if (ref_levels == -1)
-      {
-         ref_levels = (int)floor(log(10000./mesh->GetNE())/log(2.)/dim);
-      }
-
-      for (int l = 0; l < ref_levels; l++)
-      {
-         mesh->UniformRefinement();
-      }
-      
-   }
-   
-   */
-   // 6. Define a parallel mesh by a partitioning of the serial mesh. Refine
-   //    this mesh further in parallel to increase the resolution. Once the
-   //    parallel mesh is defined, the serial mesh can be deleted.
-   ParMesh *pmesh = new ParMesh(MPI_COMM_WORLD, *mesh, NULL, 3, vertex_weights);
-   delete mesh;
-   /*{
-      int par_ref_levels = 2; 
-      for (int l = 0; l < par_ref_levels; l++)
-      {
-         pmesh->UniformRefinement();
-      }
-   }
-   */
-   //0702 Adding and populating "myid" field
-   ParFiniteElementSpace myid_fes(pmesh, new L2_FECollection(0, pmesh->Dimension()));
-   GridFunction myid_gf(&myid_fes);
-
-   //0702 Adding myid 
-   for(int i = 0; i < myid_gf.Size(); i++)
-   {
-        myid_gf(i) = myid;
-   }
 
 
-   //0708 Adding and populating weights field:
-   /*ParFiniteElementSpace *weight_fes = new ParFiniteElementSpace(pmesh, new L2_FECollection(0, pmesh->Dimension()));
-   GridFunction weight_gf(weight_fes);
-
-   for(int i = 0; i < pmesh->GetNV(); i++){
-      weight_gf(i) = vertex_weights[pmesh->GetGlobalVertexIndices(i)];
-   }
-   for(int i = 0; i < weight_gf.Size(); i++){
-      weight_gf(i) = vertex_weights[i];
-   }
-
-   */
-
-   //0702 Adding weights field:
-   FiniteElementCollection *fec = new H1_FECollection(1, pmesh->Dimension());
-   ParFiniteElementSpace *pfes = new ParFiniteElementSpace(pmesh, fec);
+   FiniteElementCollection *fec = new H1_FECollection(1, mesh->Dimension());
+   FiniteElementSpace *fes = new FiniteElementSpace(mesh, fec);
 
    
-   ParGridFunction weight_gf(pfes);
+   GridFunction weight_gf(fes);
 
    weight_gf = 0.0;
 
-   for (int i = 0; i < pfes->GetVSize(); i++){
-      weight_gf(i) = vertex_weights[pfes->GetGlobalTDofNumber(i)];
+   for (int i = 0; i < mesh->GetNV(); i++){
+     weight_gf(i) = vertex_weights[i];
    }
-   
-   //Sum weights for local rank:
+
+   if(myid == 0){
+      for(int i = 0; i < weight_gf.Size(); i++){
+         cout << "weight_gf: " << i << " " << weight_gf[i] << "\n";
+      }
+   }
+
+    //Sum weights for local rank:
    double local_weights = weight_gf.Sum();
  
-
 
    //Total weights accross ALL ranks (sums all the local weights):
    double global_weights;
@@ -239,7 +211,30 @@ int main(int argc, char *argv[])
       cout << "Total Weight On Entire Mesh: " << global_weights << "\n";
    }
    
+   // 6. Define a parallel mesh by a partitioning of the serial mesh. Refine
+   //    this mesh further in parallel to increase the resolution. Once the
+   //    parallel mesh is defined, the serial mesh can be deleted.
+   ParMesh *pmesh = new ParMesh(MPI_COMM_WORLD, *mesh, NULL, 3, vertex_weights);
+   //delete mesh;
+   /*{
+      int par_ref_levels = 2; 
+      for (int l = 0; l < par_ref_levels; l++)
+      {
+         pmesh->UniformRefinement();
+      }
+   }
+   */
    
+   //0702 Adding and populating "myid" field
+   ParFiniteElementSpace myid_fes(pmesh, new L2_FECollection(0, pmesh->Dimension()));
+   GridFunction myid_gf(&myid_fes);
+
+   //0702 Adding myid 
+   for(int i = 0; i < myid_gf.Size(); i++)
+   {
+        myid_gf(i) = myid;
+   }
+
    // 7. Define a parallel finite element space on the parallel mesh. Here we
    //    use the Raviart-Thomas finite elements of the specified order.
    FiniteElementCollection *hdiv_coll(new RT_FECollection(order, dim));
