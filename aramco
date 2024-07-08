@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
    
    for(int i = 0; i < mesh->GetNV(); i++){
       if(i%2 == 0){
-         vertex_weights[i] = 3;
+         vertex_weights[i] = 10;
       }
 
       else{
@@ -202,12 +202,13 @@ int main(int argc, char *argv[])
    FiniteElementCollection *fec = new H1_FECollection(1, pmesh->Dimension());
    ParFiniteElementSpace *pfes = new ParFiniteElementSpace(pmesh, fec);
 
-
+   
    ParGridFunction weight_gf(pfes);
+
    weight_gf = 0.0;
-   for (int i = 0; i < num_vertices; i++){
-      int local_vertex = i;
-      weight_gf[local_vertex]= vertex_weights[i];
+
+   for (int i = 0; i < pfes->GetVSize(); i++){
+      weight_gf(i) = vertex_weights[pfes->GetGlobalTDofNumber(i)];
    }
    
    //Sum weights for local rank:
