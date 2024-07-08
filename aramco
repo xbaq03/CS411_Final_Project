@@ -186,16 +186,19 @@ int main(int argc, char *argv[])
 
 
    //0708 Adding and populating weights field:
-   ParFiniteElementSpace *weight_fes = new ParFiniteElementSpace(pmesh, new L2_FECollection(0, pmesh->Dimension()));
+   /*ParFiniteElementSpace *weight_fes = new ParFiniteElementSpace(pmesh, new L2_FECollection(0, pmesh->Dimension()));
    GridFunction weight_gf(weight_fes);
 
+   for(int i = 0; i < pmesh->GetNV(); i++){
+      weight_gf(i) = vertex_weights[pmesh->GetGlobalVertexIndices(i)];
+   }
    for(int i = 0; i < weight_gf.Size(); i++){
       weight_gf(i) = vertex_weights[i];
    }
 
+   */
 
-
-   /*//0702 Adding weights field:
+   //0702 Adding weights field:
    FiniteElementCollection *fec = new H1_FECollection(1, pmesh->Dimension());
    ParFiniteElementSpace *pfes = new ParFiniteElementSpace(pmesh, fec);
 
@@ -206,7 +209,7 @@ int main(int argc, char *argv[])
       int local_vertex = i;
       weight_gf[local_vertex]= vertex_weights[i];
    }
-   */
+   
    //Sum weights for local rank:
    double local_weights = weight_gf.Sum();
  
