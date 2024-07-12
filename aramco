@@ -145,7 +145,13 @@ int main(int argc, char *argv[])
       cout << "# Of Elements = " << mesh->GetNE() << " BEFORE REFINEMENT\n";
       cout << "# Of Vertices = " << mesh->GetNV() << " BEFORE REFINEMENT\n";
    }
-   //0702 Filling and Initializing weights 
+   //0702 Filling and Initializing weights
+   FiniteElementCollection *fec = new L2_FECollection(0, mesh->Dimension());
+   FiniteElementSpace *fes = new FiniteElementSpace(mesh, fec);
+
+   GridFunction weight_gf(fes);
+   weight_gf = 0.0;
+
    idx_t * vertex_weights = new idx_t[num_vertices];
    
    for(int i = 0; i < mesh->GetNV(); i++){
@@ -164,15 +170,6 @@ int main(int argc, char *argv[])
    }
 
    }
-
-
-   FiniteElementCollection *fec = new H1_FECollection(1, mesh->Dimension());
-   FiniteElementSpace *fes = new FiniteElementSpace(mesh, fec);
-
-   
-   GridFunction weight_gf(fes);
-
-   weight_gf = 0.0;
 
    for (int i = 0; i < mesh->GetNV(); i++){
      weight_gf(i) = vertex_weights[i];
