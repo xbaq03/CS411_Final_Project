@@ -146,11 +146,7 @@ int main(int argc, char *argv[])
       cout << "# Of Vertices = " << mesh->GetNV() << " BEFORE REFINEMENT\n";
    }
    //0702 Filling and Initializing weights
-   FiniteElementCollection *fec = new L2_FECollection(0, mesh->Dimension());
-   FiniteElementSpace *fes = new FiniteElementSpace(mesh, fec);
-
-   GridFunction weight_gf(fes);
-   weight_gf = 0.0;
+   
    idx_t * vertex_weights = new idx_t[num_vertices];
    
    for(int i = 0; i < mesh->GetNV(); i++){
@@ -163,9 +159,42 @@ int main(int argc, char *argv[])
       }
 
    }
+   
+   
+   if(myid == 0){
+   for(int i = 0; i < num_vertices;i++){
+      cout << i << " " <<  vertex_weights[i] << "\n"  ;
+   }
+
+   }
+
+  
+
+    
+   
+   // 6. Define a parallel mesh by a partitioning of the serial mesh. Refine
+   //    this mesh further in parallel to increase the resolution. Once the
+   //    parallel mesh is defined, the serial mesh can be deleted.
+   ParMesh *pmesh = new ParMesh(MPI_COMM_WORLD, *mesh, NULL, 3, vertex_weights);
+   delete mesh;
+   /*{
+      int par_ref_levels = 2; 
+      for (int l = 0; l < par_ref_levels; l++)
+      {
+         pmesh->UniformRefinement();
+      }
+   }
+   */
+   //Sum weights for local rank:
+   FiniteElementCollection *fec = new L2_FECollection(0, pmesh->Dimension());
+   FiniteElementSpace *pfes = new FiniteElementSpace(pmesh, fec);
+
+   GridFunction weight_gf(pfes);
+   weight_gf = 0.0;
+
    //calculating average weights:
-   for(int i = 0; i < mesh->GetNE(); i++){
-      Element *el = mesh->GetElement(i);
+   for(int i = 0; i < pmesh->GetNE(); i++){
+      Element *el = pmesh->GetElement(i);
       const int *vertices = el->GetVertices();
       int numV_elements = el->GetNVertices();
       double sum_weights = 0.0;
@@ -178,37 +207,6 @@ int main(int argc, char *argv[])
 
       weight_gf(i) = average_weight;
    }
-   
-   if(myid == 0){
-   for(int i = 0; i < num_vertices;i++){
-      cout << i << " " <<  vertex_weights[i] << "\n"  ;
-   }
-
-   }
-
-   if(myid == 0){
-      cout << "Size of weights_gf " << weight_gf.Size() << "\n";
-      for(int i = 0; i < weight_gf.Size(); i++){
-         cout << "weight_gf: " << i << " " << weight_gf[i] << "\n";
-      }
-   }
-
-    
-   
-   // 6. Define a parallel mesh by a partitioning of the serial mesh. Refine
-   //    this mesh further in parallel to increase the resolution. Once the
-   //    parallel mesh is defined, the serial mesh can be deleted.
-   ParMesh *pmesh = new ParMesh(MPI_COMM_WORLD, *mesh, NULL, 3, vertex_weights);
-   //delete mesh;
-   /*{
-      int par_ref_levels = 2; 
-      for (int l = 0; l < par_ref_levels; l++)
-      {
-         pmesh->UniformRefinement();
-      }
-   }
-   */
-   //Sum weights for local rank:
    double local_weights = weight_gf.Sum();
  
 
