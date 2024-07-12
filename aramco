@@ -151,7 +151,6 @@ int main(int argc, char *argv[])
 
    GridFunction weight_gf(fes);
    weight_gf = 0.0;
-
    idx_t * vertex_weights = new idx_t[num_vertices];
    
    for(int i = 0; i < mesh->GetNV(); i++){
@@ -164,6 +163,22 @@ int main(int argc, char *argv[])
       }
 
    }
+   //calculating average weights:
+   for(int i = 0; i < mesh->GetNE(); i++){
+      Element *el = mesh->GetElement(i);
+      const int *vertices = el->GetVertices();
+      int numV_elements = el->GetNVertices();
+      double sum_weights = 0.0;
+      
+      for(int j = 0; j < numV_elements; j++){
+         sum_weights += vertex_weights[vertices[j]];
+      }
+
+      double average_weight = sum_weights / numV_elements;
+
+      weight_gf(i) = average_weight;
+   }
+   
    if(myid == 0){
    for(int i = 0; i < num_vertices;i++){
       cout << i << " " <<  vertex_weights[i] << "\n"  ;
@@ -171,11 +186,8 @@ int main(int argc, char *argv[])
 
    }
 
-   for (int i = 0; i < mesh->GetNV(); i++){
-     weight_gf(i) = vertex_weights[i];
-   }
-
    if(myid == 0){
+      cout << "Size of weights_gf " << weight_gf.Size() << "\n";
       for(int i = 0; i < weight_gf.Size(); i++){
          cout << "weight_gf: " << i << " " << weight_gf[i] << "\n";
       }
