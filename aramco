@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 def get_file_location():
     """Prompt the user to enter the file location."""
@@ -15,18 +16,17 @@ def validate_file(file_location):
         return False
 
 def perform_actions(file_location):
-    """Placeholder function to perform actions with the file."""
-    # Open the file and perform some actions
+    """Perform the command with the provided file."""
+    # Command to be executed
+    command = f"python3 ../gp_binred.py -w {file_location}"
+    
     try:
-        with open(file_location, 'r') as file:
-            # Placeholder: Read the content of the file
-            content = file.read()
-            print("File content successfully read.")
-            # Placeholder: Perform some actions with the content
-            # Replace this with your actual actions
-            print(content)  # For demonstration, printing the content
-    except Exception as e:
-        print(f"An error occurred while handling the file: {e}")
+        # Execute the command
+        result = subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
+        # Print the command output
+        print(f"Command output:\n{result.stdout}")
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred while executing the command: {e.stderr}")
 
 def main():
     """Main function to execute the script."""
