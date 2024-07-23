@@ -3,6 +3,7 @@ import subprocess
 import networkx as nx
 import matplotlib.pyplot as plt
 import math
+from scipy.spatial import KDTree
 
 def get_file_location():
     """Prompt the user to enter the file location."""
@@ -47,28 +48,42 @@ def parse_output_file(output_file):
     return vertices
 
 def create_edges(vertices, distance_threshold):
-    """Create edges based on distance threshold."""
+    """Create edges based on distance threshold using a k-d tree."""
     edges = []
-    for i, v1 in enumerate(vertices):
-        for j, v2 in enumerate(vertices):
+    kdtree = KDTree(vertices)
+    for i, vertex in enumerate(vertices):
+        indices = kdtree.query_ball_point(vertex, distance_threshold)
+        for j in indices:
             if i != j:
-                distance = math.sqrt((v1[0] - v2[0])**2 + (v1[1] - v2[1])**2 + (v1[2] - v2[2])**2)
-                if distance <= distance_threshold:
-                    edges.append((v1, v2))
+                edges.append((i, j))
     return edges
 
 def create_graph(vertices, edges):
     """Create and display a graph from the vertices and edges."""
     G = nx.Graph()
-    for v in vertices:
-        G.add_node(v)
+    for i, v in enumerate(vertices):
+        G.add_node(i, pos=(v[0], v[1]))
     for e in edges:
         G.add_edge(*e)
     
-    # Draw the graph
-    pos = {v: (v[0], v[1]) for v in vertices}  # Use DX, DY as coordinates
+    pos = nx.get_node_attributes(G, 'pos')
     nx.draw(G, pos, with_labels=True, node_size=500, node_color='skyblue', font_size=10)
     plt.show()
+
+def save_metis_file(vertices, edges, output_file):
+    """Save the graph in METIS format."""
+    with open(output_file, 'w') as file:
+        num_vertices = len(vertices)
+        num_edges = len(edges)
+        file.write(f"{num_vertices} {num_edges}\n")
+        adjacency_list = {i: [] for i in range(num_vertices)}
+        for edge in edges:
+            adjacency_list[edge[0]].append(edge[1] + 1)  # METIS expects 1-based indexing
+            adjacency_list[edge[1]].append(edge[0] + 1)  # METIS expects 1-based indexing
+        
+        for vertex in range(num_vertices):
+            neighbors = " ".join(map(str, sorted(adjacency_list[vertex])))
+            file.write(f"{neighbors}\n")
 
 def main():
     """Main function to execute the script."""
@@ -80,6 +95,7 @@ def main():
             distance_threshold = 1.0  # Set your desired distance threshold
             edges = create_edges(vertices, distance_threshold)
             create_graph(vertices, edges)
+            save_metis_file(vertices, edges, "metis_graph.txt")  # Save graph in METIS format
 
 if __name__ == "__main__":
     main()
