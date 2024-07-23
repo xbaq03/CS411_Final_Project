@@ -1,5 +1,8 @@
 import os
 import subprocess
+import networkx as nx
+import matplotlib.pyplot as plt
+import math
 
 def get_file_location():
     """Prompt the user to enter the file location."""
@@ -15,24 +18,68 @@ def validate_file(file_location):
         print(f"File not found: {file_location}")
         return False
 
-def perform_actions(file_location):
-    """Perform the command with the provided file."""
-    # Command to be executed
+def run_command(file_location):
+    """Run the command with the provided file."""
     command = f"python3 ../gp_binred.py -w {file_location}"
-    
     try:
-        # Execute the command
         result = subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
-        # Print the command output
         print(f"Command output:\n{result.stdout}")
     except subprocess.CalledProcessError as e:
         print(f"An error occurred while executing the command: {e.stderr}")
+        return False
+    return True
+
+def parse_output_file(output_file):
+    """Parse the output file to extract DX, DY, DZ information."""
+    vertices = []
+    try:
+        with open(output_file, 'r') as file:
+            for line in file:
+                if line.startswith("DX"):
+                    parts = line.split()
+                    dx = float(parts[1])
+                    dy = float(parts[3])
+                    dz = float(parts[5])
+                    vertices.append((dx, dy, dz))
+        print("File parsed successfully.")
+    except Exception as e:
+        print(f"An error occurred while parsing the file: {e}")
+    return vertices
+
+def create_edges(vertices, distance_threshold):
+    """Create edges based on distance threshold."""
+    edges = []
+    for i, v1 in enumerate(vertices):
+        for j, v2 in enumerate(vertices):
+            if i != j:
+                distance = math.sqrt((v1[0] - v2[0])**2 + (v1[1] - v2[1])**2 + (v1[2] - v2[2])**2)
+                if distance <= distance_threshold:
+                    edges.append((v1, v2))
+    return edges
+
+def create_graph(vertices, edges):
+    """Create and display a graph from the vertices and edges."""
+    G = nx.Graph()
+    for v in vertices:
+        G.add_node(v)
+    for e in edges:
+        G.add_edge(*e)
+    
+    # Draw the graph
+    pos = {v: (v[0], v[1]) for v in vertices}  # Use DX, DY as coordinates
+    nx.draw(G, pos, with_labels=True, node_size=500, node_color='skyblue', font_size=10)
+    plt.show()
 
 def main():
     """Main function to execute the script."""
     file_location = get_file_location()
     if validate_file(file_location):
-        perform_actions(file_location)
+        if run_command(file_location):
+            output_file = "path_to_output_file_with_DX_DY_DZ.txt"  # Replace with the actual output file path
+            vertices = parse_output_file(output_file)
+            distance_threshold = 1.0  # Set your desired distance threshold
+            edges = create_edges(vertices, distance_threshold)
+            create_graph(vertices, edges)
 
 if __name__ == "__main__":
     main()
